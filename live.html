@@ -93,5 +93,13 @@ $("testSong").addEventListener("click",()=>{if(socket&&socket.readyState===WebSo
 $("testFormat").addEventListener("click",()=>{if(socket&&socket.readyState===WebSocket.OPEN)socket.send(JSON.stringify({type:"testFormat"}))});
 connect();
 </script>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js")
+      .catch(err => console.error("Service Worker:", err));
+  });
+}
+</script>
 </body>
 </html>
