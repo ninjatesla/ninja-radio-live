@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#080910">
+<title>Ninja Radio LIVE</title>
+<style>
+:root{--accent:#ff3153;--glass:rgba(9,10,20,.82);--line:rgba(255,255,255,.17)}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080910;color:#fff;font-family:Arial,Helvetica,sans-serif}
+#app{position:relative;width:100%;height:100dvh;overflow:hidden;background:#080910}
+#backdrop{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;transition:opacity .35s ease;filter:saturate(1.08)}
+.scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.4),rgba(0,0,0,.05) 34%,rgba(0,0,0,.68) 100%);pointer-events:none}
+header{position:absolute;top:max(14px,env(safe-area-inset-top));left:14px;right:14px;display:flex;align-items:center;justify-content:space-between;z-index:5}
+.brand{font-weight:1000;font-size:clamp(21px,6vw,30px);letter-spacing:1px;text-shadow:0 2px 12px #000}.brand span{color:var(--accent)}
+.live-badge{font-size:11px;letter-spacing:1px;font-weight:900;background:#e21e43;padding:7px 10px;border-radius:7px;box-shadow:0 0 18px #e21e4366}
+.format-pill{position:absolute;top:12%;left:14px;max-width:54%;padding:9px 12px;border:1px solid var(--line);border-radius:11px;background:rgba(0,0,0,.55);backdrop-filter:blur(8px);font-size:12px;font-weight:800;letter-spacing:.5px;z-index:4}
+.format-pill small{display:block;font-size:9px;opacity:.7;margin-bottom:3px;letter-spacing:1.5px}
+.main-track{position:absolute;left:14px;right:51%;top:30%;z-index:4;text-shadow:0 2px 14px #000}
+.eq{height:30px;display:flex;align-items:flex-end;gap:3px;margin-bottom:12px}.eq i{display:block;width:4px;height:10px;border-radius:4px;background:var(--accent);animation:equalize .75s ease-in-out infinite alternate}
+.eq i:nth-child(2n){animation-delay:.2s}.eq i:nth-child(3n){animation-delay:.4s}@keyframes equalize{from{height:5px}to{height:29px}}
+.now-label{font-size:9px;letter-spacing:2px;font-weight:900;opacity:.8}#songTitle{font-size:clamp(17px,4.8vw,25px);line-height:1.15;font-weight:900;margin:7px 0;overflow-wrap:anywhere}
+#songSubtitle{font-size:11px;opacity:.85;line-height:1.35}
+.right-panel{position:absolute;top:21%;right:9px;width:46%;z-index:6;padding:9px;border:1px solid var(--line);border-radius:17px;background:var(--glass);backdrop-filter:blur(12px);box-shadow:0 12px 32px #0007}
+.panel-title{font-size:10px;letter-spacing:1.2px;font-weight:900;opacity:.85;margin:1px 2px 8px}
+.option{display:flex;align-items:center;gap:7px;width:100%;min-height:47px;margin:5px 0;padding:7px;border:1px solid rgba(255,255,255,.13);border-radius:10px;background:rgba(255,255,255,.055);color:#fff;text-align:left}
+.option .icon{flex:0 0 25px;width:25px;font-size:18px;text-align:center}.option .copy{min-width:0;flex:1}
+.option .name{font-size:clamp(10px,2.8vw,12px);font-weight:900;line-height:1.15}.option .gift{font-size:9px;opacity:.82;margin-top:4px;white-space:nowrap}
+.option .coin{font-size:9px;font-weight:900;white-space:nowrap;color:#ffe4a1}.option.active{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:rgba(255,255,255,.1)}
+.option.disabled{opacity:.62}.option.disabled .coin{color:#bbb}
+.bottom-info{position:absolute;left:14px;right:14px;bottom:max(20px,env(safe-area-inset-bottom));z-index:5}
+.notice{min-height:37px;padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:rgba(0,0,0,.66);font-size:11px;line-height:1.35;display:flex;align-items:center;gap:8px}
+#noticeText{flex:1}.queue{font-weight:900;color:#ffe4a1;white-space:nowrap}
+.audio-start{width:100%;margin-top:8px;padding:12px;border:0;border-radius:11px;background:var(--accent);color:#fff;font-size:12px;font-weight:900;letter-spacing:.6px}
+.status-line{font-size:9px;text-align:center;margin-top:7px;opacity:.75;text-shadow:0 1px 5px #000}
+#toast{position:absolute;left:14px;right:14px;top:17%;z-index:10;display:none;padding:10px 12px;border:1px solid var(--accent);border-radius:12px;background:rgba(0,0,0,.9);font-size:12px;font-weight:800;text-align:center}
+#testPanel{display:none;position:absolute;left:14px;right:14px;bottom:120px;z-index:20;padding:10px;background:#10121e;border:1px solid var(--line);border-radius:12px}
+#testPanel button{padding:8px;border-radius:7px;border:1px solid var(--line);background:#25283a;color:white;margin:3px;font-size:11px}
+@media(max-height:620px){.right-panel{top:19%;padding:6px}.option{min-height:39px;margin:3px 0;padding:5px}.format-pill{top:11%}.main-track{top:29%}.bottom-info{bottom:8px}.audio-start{padding:8px}}
+</style>
+</head>
+<body>
+<div id="app">
+  <img id="backdrop" src="/images/turk-pop.png" alt="">
+  <div class="scrim"></div>
+  <header><div class="brand">NINJA <span>RADIO</span></div><div class="live-badge">● LIVE</div></header>
+  <div class="format-pill"><small>ŞU AN ÇALAN FORMAT</small><span id="formatLabel">TÜRKÇE POP</span></div>
+  <section class="main-track">
+    <div class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="now-label">ŞİMDİ ÇALIYOR</div><div id="songTitle">Ninja Radio</div>
+    <div id="songSubtitle">Hediye gönder, müziği birlikte değiştir.</div>
+  </section>
+  <aside class="right-panel">
+    <div class="panel-title">🎁 YAYINI SEN DEĞİŞTİR</div>
+    <div class="option" id="songRequestOption"><div class="icon">🎵</div><div class="copy"><div class="name">Benim İçin Şarkı</div><div class="gift">Donat hediyesiyle rastgele şarkı</div></div><div class="coin">30 🪙</div></div>
+    <div class="option active" data-format="turk-pop"><div class="icon">🇹🇷</div><div class="copy"><div class="name">Türkçe Pop</div><div class="gift">Şapka ile format değiştir</div></div><div class="coin">100 🪙</div></div>
+    <div class="option disabled" data-format="yabanci-pop"><div class="icon">🌎</div><div class="copy"><div class="name">Yabancı Pop</div><div class="gift">Hediye ayarı sonra</div></div><div class="coin">SOON</div></div>
+    <div class="option disabled" data-format="turk-slow"><div class="icon">❤️</div><div class="copy"><div class="name">Türkçe Slow</div><div class="gift">Hediye ayarı sonra</div></div><div class="coin">SOON</div></div>
+    <div class="option disabled" data-format="yabanci-slow"><div class="icon">🌙</div><div class="copy"><div class="name">Yabancı Slow</div><div class="gift">Hediye ayarı sonra</div></div><div class="coin">SOON</div></div>
+    <div class="option disabled" data-format="turk-rap"><div class="icon">🎤</div><div class="copy"><div class="name">Türk Rap</div><div class="gift">Hediye ayarı sonra</div></div><div class="coin">SOON</div></div>
+    <div class="option disabled" data-format="yabanci-rap"><div class="icon">🎧</div><div class="copy"><div class="name">Yabancı Rap</div><div class="gift">Hediye ayarı sonra</div></div><div class="coin">SOON</div></div>
+  </aside>
+  <div id="toast"></div>
+  <div id="testPanel"><b style="font-size:11px">TEST KONTROLLERİ</b><br><button id="testSong">Rastgele şarkı iste</button><button id="testFormat">Türkçe Pop'a geç</button></div>
+  <div class="bottom-info">
+    <div class="notice"><span>🎧</span><span id="noticeText">Müzik yayını hazırlanıyor…</span><span class="queue">Sıra: <b id="queueCount">0</b></span></div>
+    <button id="startAudio" class="audio-start">▶ MÜZİĞİ BAŞLAT</button>
+    <div id="statusLine" class="status-line">TikTok bağlantısı bekleniyor · Ninja Radio</div>
+  </div>
+  <audio id="player" preload="auto" playsinline></audio>
+</div>
+<script>
+const $=id=>document.getElementById(id), player=$("player"), backdrop=$("backdrop");
+let socket=null,currentTrack=null,activeFormat="turk-pop",userStartedAudio=false,toastTimer=null;
+if(new URLSearchParams(location.search).get("test")==="1")$("testPanel").style.display="block";
+function showToast(message){$("toast").textContent=message;$("toast").style.display="block";if(toastTimer)clearTimeout(toastTimer);toastTimer=setTimeout(()=>$("toast").style.display="none",5000)}
+function setFormat(format,info){activeFormat=format;backdrop.src=info?.image||("/images/"+format+".png");$("formatLabel").textContent=info?.label||format.toUpperCase().replaceAll("-"," ");document.querySelectorAll("[data-format]").forEach(el=>el.classList.toggle("active",el.dataset.format===format))}
+function syncAudio(track){if(!track)return;if(currentTrack&&String(currentTrack.id)===String(track.id))return;currentTrack=track;$("songTitle").textContent=track.title||track.file||"Rastgele şarkı";$("songSubtitle").textContent=(track.format?(track.format.toUpperCase().replaceAll("-"," ")+" · "):"")+"Ninja Radio";if(!track.url)return;player.src=track.url;player.load();player.onloadedmetadata=()=>{if(!userStartedAudio)return;const d=player.duration;if(Number.isFinite(d)&&d>0&&track.startedAt)player.currentTime=(Math.max(0,Date.now()-Number(track.startedAt))/1000)%d;player.play().then(()=>$("startAudio").textContent="Ⅱ MÜZİK ÇALIYOR").catch(()=>$("startAudio").textContent="▶ SESİ BAŞLATMAK İÇİN DOKUN")};$("noticeText").textContent="Şarkı hazır: "+(track.title||track.file)}
+function updateQueue(n){$("queueCount").textContent=String(n??0)}
+function connect(){const scheme=location.protocol==="https:"?"wss:":"ws:";socket=new WebSocket(scheme+"//"+location.host);socket.onopen=()=>$("statusLine").textContent="Sunucuya bağlandı · TikTok bağlantısı kontrol ediliyor";socket.onmessage=ev=>{let d;try{d=JSON.parse(ev.data)}catch{return}
+if(d.type==="state"){setFormat(d.activeFormat,d.formatInfo);updateQueue(d.queueCount);$("statusLine").textContent=d.tiktokConnected?"TikTok LIVE bağlantısı aktif":"Sunucu bağlı · TikTok LIVE bağlantısı bekleniyor";if(d.currentTrack)syncAudio(d.currentTrack);return}
+if(d.type==="status"){$("statusLine").textContent=d.tiktokConnected?"TikTok LIVE bağlantısı aktif":"TikTok LIVE bağlantısı kesildi / bekleniyor";return}
+if(d.type==="format"){setFormat(d.activeFormat,d.formatInfo);updateQueue(d.queueCount);showToast("🎶 "+(d.username||"İzleyici")+" formatı değiştirdi: "+(d.formatInfo?.label||d.activeFormat));$("noticeText").textContent="Yeni format: "+(d.formatInfo?.label||d.activeFormat);return}
+if(d.type==="track"){updateQueue(d.queueCount);if(d.currentTrack)syncAudio(d.currentTrack);else $("noticeText").textContent=d.notice||"MP3 bekleniyor";return}
+if(d.type==="gift"){showToast("🎁 "+d.nickname+" gönderdi: "+d.giftName);return}
+if(d.type==="song-queued"){updateQueue(d.queueCount);$("noticeText").textContent="🎵 "+d.username+" için şarkı sıraya alındı: "+d.title;showToast("🎵 "+d.username+" için şarkı seçildi: "+d.title);return}
+if(d.type==="song-request-playing"){showToast("🎶 "+d.username+" için şimdi çalıyor: "+d.title);return}
+if(d.type==="notice")showToast(d.message)};
+socket.onclose=()=>{$("statusLine").textContent="Bağlantı yenileniyor…";setTimeout(connect,3000)};socket.onerror=()=>$("statusLine").textContent="Sunucu bağlantı hatası"}
+player.addEventListener("ended",()=>{if(socket&&socket.readyState===WebSocket.OPEN&&currentTrack)socket.send(JSON.stringify({type:"trackEnded",trackId:currentTrack.id}))});
+$("startAudio").addEventListener("click",()=>{userStartedAudio=true;if(player.src){const d=player.duration;if(Number.isFinite(d)&&d>0&&currentTrack?.startedAt)player.currentTime=(Math.max(0,Date.now()-Number(currentTrack.startedAt))/1000)%d;player.play().then(()=>$("startAudio").textContent="Ⅱ MÜZİK ÇALIYOR").catch(()=>showToast("Tarayıcı sesi başlatamadı. Tekrar dokun."))}else $("noticeText").textContent="Henüz MP3 bulunamadı. music klasörlerini kontrol et."});
+$("testSong").addEventListener("click",()=>{if(socket&&socket.readyState===WebSocket.OPEN)socket.send(JSON.stringify({type:"testSong"}))});
+$("testFormat").addEventListener("click",()=>{if(socket&&socket.readyState===WebSocket.OPEN)socket.send(JSON.stringify({type:"testFormat"}))});
+connect();
+</script>
+</body>
+</html>

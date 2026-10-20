@@ -1,7 +1,7 @@
 {
   "name": "ninja-radio-live",
   "version": "1.0.0",
-  "description": "Ninja Radio - Interactive music livestream",
+  "description": "Ninja Radio - interactive music livestream with TikTok gift controls",
   "type": "module",
   "scripts": {
     "start": "node server.js"
@@ -9,6 +9,6 @@
   "dependencies": {
     "express": "^4.21.2",
     "ws": "^8.18.0",
-    "tiktok-live-connector": "^2.1.0"
+    "tiktok-live-connector": "^2.5.0"
   }
 }
