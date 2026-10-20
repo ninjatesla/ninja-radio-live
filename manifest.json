@@ -1,13 +1,12 @@
 {
-  "background_color": "#0b0610",
-  "dir": "ltr",
-  "display": "standalone",
-  "name": "Ninja Radio",
-  "orientation": "any",
-  "scope": "/",
+  "id": "/",
+  "name": "Ninja Radio LIVE",
   "short_name": "Ninja Radio",
-  "start_url": "/",
-  "theme_color": "#ff1744",
-  "id": "ninja-radio",
-  "description": "Ninja Radio - Kesintisiz müzik yayını"
+  "description": "Ninja Radio - Kesintisiz müzik yayını",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#0b0610",
+  "theme_color": "#ff1744"
 }
