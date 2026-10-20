@@ -12,8 +12,9 @@
   "icons": [
     {
       "src": "/ninja-radio-icon.png",
-      "sizes": "1536x1024",
-      "type": "image/png"
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }
