@@ -1,0 +1,13 @@
+{
+  "background_color": "#0b0610",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "Ninja Radio",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "Ninja Radio",
+  "start_url": "/",
+  "theme_color": "#ff1744",
+  "id": "ninja-radio",
+  "description": "Ninja Radio - Kesintisiz müzik yayını"
+}
