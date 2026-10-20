@@ -131,6 +131,17 @@ app.get("/api/tracks", (_req, res) => {
   for (const format of Object.keys(FORMATS)) tracks[format] = getTracks(format);
   res.json({ formats: FORMATS, tracks });
 });
+app.get("/manifest.json", (_req, res) =>
+  res.sendFile(path.join(ROOT, "manifest.json"))
+);
+
+app.get("/sw.js", (_req, res) =>
+  res.sendFile(path.join(ROOT, "sw.js"))
+);
+
+app.get("/ninja-radio-icon.png", (_req, res) =>
+  res.sendFile(path.join(ROOT, "ninja-radio-icon.png"))
+);
 app.use("/images", express.static(path.join(ROOT, "images")));
 app.use("/music", express.static(path.join(ROOT, "music")));
 app.get("/live.html", (_req, res) => res.sendFile(path.join(ROOT, "live.html")));
