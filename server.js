@@ -19,6 +19,7 @@ const FORMATS = {
 };
 
 let activeFormat = "turk-pop";
+let activeFormatOwner = null; // Son format hediyesi gönderen kişi
 let currentTrack = null;
 let nextTrackId = 0;
 let tiktokConnection = null;
@@ -26,6 +27,9 @@ let tiktokConnected = false;
 let reconnectTimer = null;
 const clients = new Set();
 const songQueue = [];
+// A format gift grants three completed songs. Further format gifts wait in order.
+let formatSongsRemaining = 0;
+const formatQueue = [];
 const recentGiftEventIds = new Map();
 
 function normalizeText(value = "") {
@@ -73,18 +77,20 @@ function sendState(socket) {
   socket.send(JSON.stringify({
     type: "state", formats: FORMATS, activeFormat,
     formatInfo: FORMATS[activeFormat], currentTrack,
-    queueCount: songQueue.length, tiktokConnected
+    queueCount: songQueue.length, tiktokConnected, activeFormatOwner,
+    formatSongsRemaining
   }));
 }
 
-function playTrack(track, reason = "auto") {
+function playTrack(track, reason = "auto", dedicatedTo = null) {
   if (!track) {
     currentTrack = null;
     broadcast({ type: "track", currentTrack: null, queueCount: songQueue.length,
       notice: "Bu formatın klasöründe MP3 bulunamadı." });
     return;
   }
-  currentTrack = { ...track, id: ++nextTrackId, startedAt: Date.now(), reason };
+  currentTrack = { ...track, id: ++nextTrackId, startedAt: Date.now(), reason,
+    dedicatedTo: dedicatedTo || null, activeFormatOwner: activeFormatOwner || null };
   console.log("NOW PLAYING:", FORMATS[track.format]?.label, "=>", track.title, "|", reason);
   broadcast({ type: "track", currentTrack, queueCount: songQueue.length });
 }
@@ -92,10 +98,37 @@ function playTrack(track, reason = "auto") {
 function changeFormat(format, username = "izleyici", source = "gift") {
   if (!FORMATS[format]) return;
   activeFormat = format;
+  activeFormatOwner = username;
   songQueue.length = 0;
   broadcast({ type: "format", activeFormat, formatInfo: FORMATS[activeFormat],
-    username, source, queueCount: songQueue.length });
+    username, source, queueCount: songQueue.length, activeFormatOwner });
   playTrack(chooseRandomTrack(activeFormat, currentTrack?.url || ""), "format-change");
+}
+
+function requestFormatGift(format, username = "izleyici") {
+  if (!FORMATS[format]) return;
+
+  // If a paid three-song block is in progress, queue this gift's format.
+  if (formatSongsRemaining > 0) {
+    formatQueue.push({ format, username });
+    broadcast({
+      type: "notice",
+      message: `🎁 ${username} seçimini yaptı: ${FORMATS[format].label}. Mevcut 3 şarkılık hak bitince sıraya geçecek. Sıradaki format hediyesi: ${formatQueue.length}`
+    });
+    console.log("FORMAT GIFT QUEUED:", username, "=>", FORMATS[format].label,
+      "| remaining:", formatSongsRemaining, "| queued:", formatQueue.length);
+    return;
+  }
+
+  // No active paid block: apply this gift immediately and grant three songs.
+  activeFormat = format;
+  activeFormatOwner = username;
+  formatSongsRemaining = 3;
+  songQueue.length = 0;
+  broadcast({ type: "format", activeFormat, formatInfo: FORMATS[activeFormat],
+    username, source: "gift", queueCount: songQueue.length, formatSongsRemaining, activeFormatOwner });
+  broadcast({ type: "notice", message: `🎶 ${username} ${FORMATS[format].label} seçti! Bu formatta 3 şarkı hakkı başladı.` });
+  playTrack(chooseRandomTrack(activeFormat, currentTrack?.url || ""), "format-gift");
 }
 
 function requestRandomSong(username = "izleyici", source = "gift") {
@@ -106,15 +139,37 @@ function requestRandomSong(username = "izleyici", source = "gift") {
   }
   songQueue.push({ track, username, source });
   broadcast({ type: "song-queued", username, title: track.title,
-    format: activeFormat, queueCount: songQueue.length });
+    format: activeFormat, queueCount: songQueue.length,
+    dedicatedTo: activeFormatOwner || null });
   console.log("SONG QUEUED:", username, "=>", track.title, "| queue:", songQueue.length);
-  if (!currentTrack) advanceTrack();
+  if (!currentTrack) advanceTrack(false);
 }
 
-function advanceTrack() {
+function advanceTrack(trackEnded = false) {
+  // Count a song only after playback reports that it has ended.
+  if (trackEnded && formatSongsRemaining > 0) {
+    formatSongsRemaining -= 1;
+    broadcast({ type: "notice", message: `🎵 Bu format için kalan şarkı hakkı: ${formatSongsRemaining}` });
+  }
+
+  // The next queued format starts only after the current three-song block ends.
+  if (trackEnded && formatSongsRemaining === 0 && formatQueue.length > 0) {
+    const nextFormat = formatQueue.shift();
+    activeFormat = nextFormat.format;
+    activeFormatOwner = nextFormat.username;
+    formatSongsRemaining = 3;
+    songQueue.length = 0;
+    broadcast({ type: "format", activeFormat, formatInfo: FORMATS[activeFormat],
+      username: nextFormat.username, source: "gift-queue", queueCount: songQueue.length,
+      formatSongsRemaining, activeFormatOwner });
+    broadcast({ type: "notice", message: `🎶 Sıra ${nextFormat.username}'e geldi: ${FORMATS[activeFormat].label}. Yeni 3 şarkılık hak başladı.` });
+    playTrack(chooseRandomTrack(activeFormat, currentTrack?.url || ""), "format-gift-queued");
+    return;
+  }
+
   if (songQueue.length) {
     const next = songQueue.shift();
-    playTrack(next.track, "gift-request");
+    playTrack(next.track, "gift-request", next.username);
     broadcast({ type: "song-request-playing", username: next.username, title: next.track.title });
   } else {
     playTrack(chooseRandomTrack(activeFormat, currentTrack?.url || ""), "auto-next");
@@ -124,24 +179,14 @@ function advanceTrack() {
 app.get("/", (_req, res) => res.sendFile(path.join(ROOT, "live.html")));
 app.get("/health", (_req, res) => res.json({
   ok: true, service: "Ninja Radio", tiktokConnected, activeFormat,
-  currentTrack: currentTrack?.title || null, queueCount: songQueue.length
+  currentTrack: currentTrack?.title || null, queueCount: songQueue.length,
+  formatSongsRemaining, queuedFormatGifts: formatQueue.length, activeFormatOwner
 }));
 app.get("/api/tracks", (_req, res) => {
   const tracks = {};
   for (const format of Object.keys(FORMATS)) tracks[format] = getTracks(format);
   res.json({ formats: FORMATS, tracks });
 });
-app.get("/manifest.json", (_req, res) =>
-  res.sendFile(path.join(ROOT, "manifest.json"))
-);
-
-app.get("/sw.js", (_req, res) =>
-  res.sendFile(path.join(ROOT, "sw.js"))
-);
-
-app.get("/ninja-radio-icon.png", (_req, res) =>
-  res.sendFile(path.join(ROOT, "ninja-radio-icon.png"))
-);
 app.use("/images", express.static(path.join(ROOT, "images")));
 app.use("/music", express.static(path.join(ROOT, "music")));
 app.get("/live.html", (_req, res) => res.sendFile(path.join(ROOT, "live.html")));
@@ -160,7 +205,8 @@ wss.on("connection", socket => {
     let data;
     try { data = JSON.parse(raw.toString()); } catch { return; }
     if (data.type === "trackEnded" && currentTrack && Number(data.trackId) === Number(currentTrack.id)) {
-      advanceTrack();
+      if (currentTrack.dedicatedTo) broadcast({ type: "song-request-finished", username: currentTrack.dedicatedTo });
+      advanceTrack(true);
     }
     // Visible only with ?test=1; useful for local tests before sending a real gift.
     if (data.type === "testSong") requestRandomSong("test kullanıcısı", "test");
@@ -211,10 +257,21 @@ function handleGift(data) {
     return;
   }
 
-  // Deneme aşaması: yalnızca Şapka / Hat / Cap, Türkçe Pop formatını etkinleştirir.
-  if (["hat", "cap", "sapka"].includes(normalizedGiftName) ||
-      normalizedGiftName.startsWith("hat ") || normalizedGiftName.startsWith("cap ")) {
-    changeFormat("turk-pop", nickname, "gift");
+  // 100 coin hediyeleri: her hediye bir formatta üç şarkı hakkı verir.
+  const formatGiftMap = {
+    "hand hearts": "turk-pop",
+    "hand heart": "turk-pop",
+    "super gg": "yabanci-pop",
+    "confetti": "turk-slow",
+    "bouquet": "yabanci-slow",
+    "balloon gift box": "turk-rap",
+    "balloon giftbox": "turk-rap",
+    "mini star": "yabanci-rap"
+  };
+
+  const requestedFormat = formatGiftMap[normalizedGiftName];
+  if (requestedFormat) {
+    requestFormatGift(requestedFormat, nickname);
     return;
   }
   console.log("GIFT: Bu hediye için henüz işlem tanımlı değil:", giftName);
